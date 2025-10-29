@@ -8,6 +8,8 @@ import Home from "./pages/Home";
 import Upload from "./pages/Upload";
 import Config from "./pages/Config";
 import Chat from "./pages/Chat";
+import BuildModel from "./pages/BuildModel";
+import Models from "./pages/Models";
 
 function Router() {
   return (
@@ -16,6 +18,8 @@ function Router() {
       <Route path="/upload" component={Upload} />
       <Route path="/config" component={Config} />
       <Route path="/chat" component={Chat} />
+      <Route path="/build-model" component={BuildModel} />
+      <Route path="/models" component={Models} />
       <Route path="/404" component={NotFound} />
       <Route component={NotFound} />
     </Switch>

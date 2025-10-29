@@ -5,12 +5,10 @@ import { Brain, BarChart3, TrendingUp, Upload as UploadIcon } from "lucide-react
 import { APP_TITLE } from "@/const";
 
 export default function Home() {
+  const navigate = (path: string) => window.location.href = path;
   const [, setLocation] = useLocation();
 
-  useEffect(() => {
-    // Auto-redirect to upload page
-    setLocation("/upload");
-  }, [setLocation]);
+  // Removed auto-redirect
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-600 via-purple-600 to-pink-500">
@@ -120,9 +118,9 @@ export default function Home() {
                   </div>
                 </div>
                 <div>
-                  <h4 className="font-bold mb-1">Multiple Format Support</h4>
+                  <h4 className="font-bold mb-1">No-Code Model Building</h4>
                   <p className="text-white/80 text-sm">
-                    Works with CSV, XLSX, and XLS files with automatic data type detection
+                    Train machine learning models without writing code. Get RMSE, MSE, MAE metrics instantly
                   </p>
                 </div>
               </div>

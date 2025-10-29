@@ -9,6 +9,7 @@ import { createContext } from "./context";
 import { serveStatic, setupVite } from "./vite";
 import simpleStreamRouter from "../simple-stream";
 import apiRouter from "../api";
+import modelRouter from "../model-api";
 
 function isPortAvailable(port: number): Promise<boolean> {
   return new Promise(resolve => {
@@ -40,6 +41,8 @@ async function startServer() {
   app.use("/api", apiRouter);
   // Simplified streaming endpoint for AI
   app.use("/api/stream", simpleStreamRouter);
+  // ML Model training and management API
+  app.use("/api/ml", modelRouter);
   // tRPC API
   app.use(
     "/api/trpc",

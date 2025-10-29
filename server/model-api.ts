@@ -304,3 +304,156 @@ router.post("/models/:id/predict", async (req, res) => {
 });
 
 export default router;
+
+// Compare multiple models
+router.post("/compare", async (req, res) => {
+  try {
+    const { model_ids } = req.body;
+
+    if (!model_ids || !Array.isArray(model_ids) || model_ids.length < 2) {
+      return res.status(400).json({
+        success: false,
+        error: "At least 2 model IDs are required for comparison",
+      });
+    }
+
+    // Load all models
+    const models: TrainedModel[] = [];
+    for (const id of model_ids) {
+      const modelPath = path.join(MODELS_DIR, `${id}.json`);
+      try {
+        const modelData = await fs.readFile(modelPath, "utf-8");
+        models.push(JSON.parse(modelData));
+      } catch (error) {
+        return res.status(404).json({
+          success: false,
+          error: `Model not found: ${id}`,
+        });
+      }
+    }
+
+    // Import comparison utilities
+    const { compareModels } = await import("./model-comparison");
+    const comparison = compareModels(models);
+
+    res.json({
+      success: true,
+      data: comparison,
+    });
+  } catch (error: any) {
+    console.error("Error comparing models:", error);
+    res.status(500).json({
+      success: false,
+      error: error.message,
+    });
+  }
+});
+
+// Compare two models
+router.post("/compare-two", async (req, res) => {
+  try {
+    const { model1_id, model2_id } = req.body;
+
+    if (!model1_id || !model2_id) {
+      return res.status(400).json({
+        success: false,
+        error: "Both model1_id and model2_id are required",
+      });
+    }
+
+    // Load both models
+    const model1Path = path.join(MODELS_DIR, `${model1_id}.json`);
+    const model2Path = path.join(MODELS_DIR, `${model2_id}.json`);
+
+    const [model1Data, model2Data] = await Promise.all([
+      fs.readFile(model1Path, "utf-8"),
+      fs.readFile(model2Path, "utf-8"),
+    ]);
+
+    const model1 = JSON.parse(model1Data);
+    const model2 = JSON.parse(model2Data);
+
+    // Import comparison utilities
+    const { compareTwoModels } = await import("./model-comparison");
+    const comparison = compareTwoModels(model1, model2);
+
+    res.json({
+      success: true,
+      data: comparison,
+    });
+  } catch (error: any) {
+    console.error("Error comparing two models:", error);
+    res.status(500).json({
+      success: false,
+      error: error.message,
+    });
+  }
+});
+
+// Get model version history
+router.get("/versions/:model_id", async (req, res) => {
+  try {
+    const { model_id } = req.params;
+
+    // Load all models
+    const files = await fs.readdir(MODELS_DIR);
+    const models: TrainedModel[] = [];
+
+    for (const file of files) {
+      if (file.endsWith(".json")) {
+        const modelData = await fs.readFile(path.join(MODELS_DIR, file), "utf-8");
+        models.push(JSON.parse(modelData));
+      }
+    }
+
+    // Import versioning utilities
+    const { getModelVersionHistory } = await import("./model-comparison");
+    const versions = getModelVersionHistory(models, model_id);
+
+    res.json({
+      success: true,
+      data: versions,
+    });
+  } catch (error: any) {
+    console.error("Error getting model versions:", error);
+    res.status(500).json({
+      success: false,
+      error: error.message,
+    });
+  }
+});
+
+// Create new version of a model
+router.post("/versions/:model_id", async (req, res) => {
+  try {
+    const { model_id } = req.params;
+    const { description, ...newModelData } = req.body;
+
+    // Load parent model
+    const parentPath = path.join(MODELS_DIR, `${model_id}.json`);
+    const parentData = await fs.readFile(parentPath, "utf-8");
+    const parentModel = JSON.parse(parentData);
+
+    // Import versioning utilities
+    const { createModelVersion } = await import("./model-comparison");
+    const newVersion = createModelVersion(parentModel, {
+      ...newModelData,
+      description,
+    });
+
+    // Save new version
+    const newVersionPath = path.join(MODELS_DIR, `${newVersion.id}.json`);
+    await fs.writeFile(newVersionPath, JSON.stringify(newVersion, null, 2));
+
+    res.json({
+      success: true,
+      data: newVersion,
+    });
+  } catch (error: any) {
+    console.error("Error creating model version:", error);
+    res.status(500).json({
+      success: false,
+      error: error.message,
+    });
+  }
+});

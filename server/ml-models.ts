@@ -31,6 +31,9 @@ export interface TrainedModel {
   targetName: string;
   trainedAt: string;
   datasetId: string;
+  version: number;
+  parent_id?: string; // For versioning - points to previous version
+  description?: string;
 }
 
 export interface TrainingResult {

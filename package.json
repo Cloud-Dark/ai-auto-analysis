@@ -1,8 +1,36 @@
 {
   "name": "ai-auto-analysis",
   "version": "1.0.0",
+  "description": "No-code AI model builder for data analysis, forecasting, and machine learning with Google Gemini integration",
   "type": "module",
   "license": "MIT",
+  "author": "Cloud-Dark",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Cloud-Dark/ai-auto-analysis.git"
+  },
+  "bugs": {
+    "url": "https://github.com/Cloud-Dark/ai-auto-analysis/issues"
+  },
+  "homepage": "https://github.com/Cloud-Dark/ai-auto-analysis#readme",
+  "keywords": [
+    "ai",
+    "machine-learning",
+    "data-analysis",
+    "forecasting",
+    "no-code",
+    "gemini",
+    "regression",
+    "eda",
+    "model-builder",
+    "typescript",
+    "react",
+    "express"
+  ],
+  "engines": {
+    "node": ">=22.0.0",
+    "pnpm": ">=10.0.0"
+  },
   "scripts": {
     "dev": "NODE_ENV=development tsx watch server/_core/index.ts",
     "build": "vite build && esbuild server/_core/index.ts --platform=node --packages=external --bundle --format=esm --outdir=dist",

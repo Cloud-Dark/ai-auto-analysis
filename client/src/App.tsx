@@ -10,6 +10,7 @@ import Config from "./pages/Config";
 import Chat from "./pages/Chat";
 import BuildModel from "./pages/BuildModel";
 import Models from "./pages/Models";
+import CompareModels from "./pages/CompareModels";
 
 function Router() {
   return (
@@ -20,6 +21,7 @@ function Router() {
       <Route path="/chat" component={Chat} />
       <Route path="/build-model" component={BuildModel} />
       <Route path="/models" component={Models} />
+      <Route path="/compare-models" component={CompareModels} />
       <Route path="/404" component={NotFound} />
       <Route component={NotFound} />
     </Switch>

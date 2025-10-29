@@ -74,7 +74,7 @@
 - [x] Remove auth context and hooks
 - [x] Remove login/logout UI components
 - [x] Update App.tsx to remove auth checks
-- [ ] Commit: "Remove authentication system"
+- [x] Commit: "Remove authentication system" (included in Phase 2 commit)
 
 ### Phase 3: Migrate to SQLite + JSON
 - [x] Create SQLite service for CRUD operations
@@ -141,9 +141,9 @@ Checkpoint: 9c1892c8
 - [x] Install Jest/Vitest for testing
 - [x] Setup `npm run test` command
 - [x] Write API endpoint tests
-- [ ] Write upload/download tests
-- [ ] Test chat streaming
-- [ ] Test model training
+- [x] Write upload/download tests
+- [x] Test chat streaming
+- [x] Test model training
 - [x] Commit: "Add testing setup and enhanced EDA tools"
 
 ### Model Training Features
@@ -151,9 +151,9 @@ Checkpoint: 9c1892c8
 - [x] Add training metrics calculation (RMSE, MSE, MAE, R², MAPE)
 - [x] Add train/test split functionality
 - [x] Add auto-train (compare all models)
-- [ ] Generate training/validation error plots (frontend)
-- [ ] Show confusion matrix for classification
-- [ ] Add feature importance visualization (frontend)
+- [x] Generate training/validation error plots (included in BuildModel.tsx with Recharts)
+- [ ] Show confusion matrix for classification (SKIPPED - classification not implemented yet)
+- [x] Add feature importance visualization (included in BuildModel.tsx)
 - [x] Commit: "Add model training backend with metrics"
 
 ### Model Management
@@ -167,8 +167,8 @@ Checkpoint: 9c1892c8
 - [x] Add routes for BuildModel and Models pages
 - [x] Add visualizations (predictions vs actual, residuals)
 - [x] Add metrics display (RMSE, MSE, MAE, R²)
-- [ ] Add model versioning
-- [ ] Add model comparison features
+- [ ] Add model versioning (OPTIONAL - can be added later)
+- [ ] Add model comparison features (OPTIONAL - can be added later)
 - [x] Commit: "Add model management backend"
 - [x] Commit: "Add no-code AI model builder frontend"
 
@@ -194,4 +194,4 @@ Checkpoint: 9c1892c8
 - [x] Write API documentation (API_DOCS.md)
 - [x] Write developer guide (DEVELOPER_GUIDE.md)
 - [x] Add examples and tutorials
-- [ ] Commit: "Add comprehensive documentation"
+- [x] Commit: "Add comprehensive documentation"

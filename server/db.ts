@@ -1,11 +1,22 @@
-import { eq } from "drizzle-orm";
+import { eq, desc, and } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
-import { InsertUser, users } from "../drizzle/schema";
+import { 
+  InsertUser, 
+  users, 
+  datasets, 
+  InsertDataset, 
+  Dataset,
+  chatSessions,
+  InsertChatSession,
+  ChatSession,
+  chatMessages,
+  InsertChatMessage,
+  ChatMessage
+} from "../drizzle/schema";
 import { ENV } from './_core/env';
 
 let _db: ReturnType<typeof drizzle> | null = null;
 
-// Lazily create the drizzle instance so local tooling can run without a DB.
 export async function getDb() {
   if (!_db && process.env.DATABASE_URL) {
     try {
@@ -89,4 +100,75 @@ export async function getUserByOpenId(openId: string) {
   return result.length > 0 ? result[0] : undefined;
 }
 
-// TODO: add feature queries here as your schema grows.
+// Dataset queries
+export async function createDataset(dataset: InsertDataset): Promise<Dataset> {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  const result = await db.insert(datasets).values(dataset);
+  const insertedId = Number(result[0].insertId);
+  
+  const inserted = await db.select().from(datasets).where(eq(datasets.id, insertedId)).limit(1);
+  return inserted[0];
+}
+
+export async function getUserDatasets(userId: number): Promise<Dataset[]> {
+  const db = await getDb();
+  if (!db) return [];
+
+  return db.select().from(datasets).where(eq(datasets.userId, userId)).orderBy(desc(datasets.createdAt));
+}
+
+export async function getDatasetById(id: number): Promise<Dataset | undefined> {
+  const db = await getDb();
+  if (!db) return undefined;
+
+  const result = await db.select().from(datasets).where(eq(datasets.id, id)).limit(1);
+  return result[0];
+}
+
+// Chat session queries
+export async function createChatSession(session: InsertChatSession): Promise<ChatSession> {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  const result = await db.insert(chatSessions).values(session);
+  const insertedId = Number(result[0].insertId);
+  
+  const inserted = await db.select().from(chatSessions).where(eq(chatSessions.id, insertedId)).limit(1);
+  return inserted[0];
+}
+
+export async function getChatSession(sessionId: number): Promise<ChatSession | undefined> {
+  const db = await getDb();
+  if (!db) return undefined;
+
+  const result = await db.select().from(chatSessions).where(eq(chatSessions.id, sessionId)).limit(1);
+  return result[0];
+}
+
+export async function getUserChatSessions(userId: number): Promise<ChatSession[]> {
+  const db = await getDb();
+  if (!db) return [];
+
+  return db.select().from(chatSessions).where(eq(chatSessions.userId, userId)).orderBy(desc(chatSessions.createdAt));
+}
+
+// Chat message queries
+export async function createChatMessage(message: InsertChatMessage): Promise<ChatMessage> {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  const result = await db.insert(chatMessages).values(message);
+  const insertedId = Number(result[0].insertId);
+  
+  const inserted = await db.select().from(chatMessages).where(eq(chatMessages.id, insertedId)).limit(1);
+  return inserted[0];
+}
+
+export async function getSessionMessages(sessionId: number): Promise<ChatMessage[]> {
+  const db = await getDb();
+  if (!db) return [];
+
+  return db.select().from(chatMessages).where(eq(chatMessages.sessionId, sessionId)).orderBy(chatMessages.createdAt);
+}

@@ -105,3 +105,9 @@ temp/
 *.db
 *.sqlite
 *.sqlite3
+
+# Local data storage
+data/
+*.db
+*.db-shm
+*.db-wal

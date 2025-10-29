@@ -1,27 +1,16 @@
 import { useEffect } from "react";
 import { useLocation } from "wouter";
-import { useAuth } from "@/_core/hooks/useAuth";
 import { Button } from "@/components/ui/button";
-import { Loader2, Brain, BarChart3, TrendingUp, Upload as UploadIcon } from "lucide-react";
-import { APP_TITLE, getLoginUrl } from "@/const";
+import { Brain, BarChart3, TrendingUp, Upload as UploadIcon } from "lucide-react";
+import { APP_TITLE } from "@/const";
 
 export default function Home() {
-  const { user, loading, isAuthenticated } = useAuth();
   const [, setLocation] = useLocation();
 
   useEffect(() => {
-    if (!loading && isAuthenticated) {
-      setLocation("/upload");
-    }
-  }, [loading, isAuthenticated, setLocation]);
-
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <Loader2 className="w-8 h-8 animate-spin text-blue-500" />
-      </div>
-    );
-  }
+    // Auto-redirect to upload page
+    setLocation("/upload");
+  }, [setLocation]);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-600 via-purple-600 to-pink-500">
@@ -38,15 +27,13 @@ export default function Home() {
               Upload your dataset, configure AI, and get instant insights with exploratory data analysis and forecasting powered by Google Gemini
             </p>
             
-            {!isAuthenticated && (
-              <Button
-                size="lg"
-                className="bg-white text-purple-600 hover:bg-gray-100 text-lg px-8 py-6"
-                onClick={() => window.location.href = getLoginUrl()}
-              >
-                Get Started
-              </Button>
-            )}
+            <Button
+              size="lg"
+              className="bg-white text-purple-600 hover:bg-gray-100 text-lg px-8 py-6"
+              onClick={() => setLocation("/upload")}
+            >
+              Get Started
+            </Button>
           </div>
 
           <div className="grid md:grid-cols-3 gap-8 max-w-5xl mx-auto">

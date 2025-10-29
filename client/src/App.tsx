@@ -14,8 +14,8 @@ function Router() {
     <Switch>
       <Route path="/" component={Home} />
       <Route path="/upload" component={Upload} />
-      <Route path="/config/:id" component={Config} />
-      <Route path="/chat/:id" component={Chat} />
+      <Route path="/config" component={Config} />
+      <Route path="/chat" component={Chat} />
       <Route path="/404" component={NotFound} />
       <Route component={NotFound} />
     </Switch>

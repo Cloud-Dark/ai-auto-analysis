@@ -3,11 +3,12 @@ import express from "express";
 import { createServer } from "http";
 import net from "net";
 import { createExpressMiddleware } from "@trpc/server/adapters/express";
-import { registerOAuthRoutes } from "./oauth";
+// OAuth removed - public access only
 import { appRouter } from "../routers";
 import { createContext } from "./context";
 import { serveStatic, setupVite } from "./vite";
-import chatStreamRouter from "../chat-stream";
+import simpleStreamRouter from "../simple-stream";
+import apiRouter from "../api";
 
 function isPortAvailable(port: number): Promise<boolean> {
   return new Promise(resolve => {
@@ -34,10 +35,11 @@ async function startServer() {
   // Configure body parser with larger size limit for file uploads
   app.use(express.json({ limit: "50mb" }));
   app.use(express.urlencoded({ limit: "50mb", extended: true }));
-  // OAuth callback under /api/oauth/callback
-  registerOAuthRoutes(app);
-  // Chat streaming endpoint
-  app.use("/api/chat", chatStreamRouter);
+  // No authentication - public access
+  // REST API for datasets, sessions, messages
+  app.use("/api", apiRouter);
+  // Simplified streaming endpoint for AI
+  app.use("/api/stream", simpleStreamRouter);
   // tRPC API
   app.use(
     "/api/trpc",

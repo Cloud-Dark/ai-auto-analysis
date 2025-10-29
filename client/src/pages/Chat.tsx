@@ -1,323 +1,218 @@
 import { useState, useEffect, useRef } from "react";
-import { useParams, useLocation } from "wouter";
-import { trpc } from "@/lib/trpc";
+import { useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Loader2, Send, ArrowLeft, Bot, User } from "lucide-react";
+import { Loader2, Send, Bot, User } from "lucide-react";
+import { getSession, getMessagesBySession, createMessage } from "@/lib/api";
 import { toast } from "sonner";
 import { Streamdown } from "streamdown";
 
 interface Message {
-  role: "user" | "assistant" | "system";
+  id: string;
+  role: "user" | "assistant";
   content: string;
-  metadata?: any;
 }
 
 export default function Chat() {
-  const params = useParams();
-  const sessionId = parseInt(params.id as string);
   const [, setLocation] = useLocation();
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
-  const [isStreaming, setIsStreaming] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [sessionInfo, setSessionInfo] = useState<any>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const abortControllerRef = useRef<AbortController | null>(null);
-
-  const { data: session, isLoading: sessionLoading } = trpc.chat.getSession.useQuery({ sessionId });
-  const { data: historyMessages, isLoading: messagesLoading } = trpc.chat.getMessages.useQuery({ sessionId });
-
-  const sendMessageMutation = trpc.chat.sendMessage.useMutation();
 
   useEffect(() => {
-    if (historyMessages) {
-      setMessages(historyMessages.map(msg => ({
-        role: msg.role as "user" | "assistant" | "system",
-        content: msg.content,
-        metadata: msg.metadata ? JSON.parse(msg.metadata) : null,
-      })));
+    const sessionId = localStorage.getItem("current_session_id");
+    if (!sessionId) {
+      toast.error("No session found. Please configure AI first.");
+      setLocation("/config");
+      return;
     }
-  }, [historyMessages]);
+
+    getSession(sessionId).then(session => {
+      setSessionInfo(session);
+      return getMessagesBySession(sessionId);
+    }).then(msgs => {
+      setMessages(msgs.map(m => ({ id: m.id, role: m.role, content: m.content })));
+    }).catch(() => {
+      toast.error("Failed to load session");
+      setLocation("/config");
+    });
+  }, [setLocation]);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
-  const handleStreamResponse = async (message: string) => {
-    setIsStreaming(true);
-    abortControllerRef.current = new AbortController();
+  const handleSend = async () => {
+    if (!input.trim() || loading) return;
 
-    // Add user message to UI
-    const userMessage: Message = { role: "user", content: message };
-    setMessages(prev => [...prev, userMessage]);
+    const sessionId = localStorage.getItem("current_session_id");
+    if (!sessionId) return;
 
-    // Add placeholder for assistant response
-    const assistantMessage: Message = { role: "assistant", content: "" };
-    setMessages(prev => [...prev, assistantMessage]);
+    const userMessage = input.trim();
+    setInput("");
+    setLoading(true);
+
+    const userMsg: Message = {
+      id: `temp-${Date.now()}`,
+      role: "user",
+      content: userMessage,
+    };
+    setMessages(prev => [...prev, userMsg]);
 
     try {
-      const response = await fetch("/api/chat/stream", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          sessionId,
-          message,
-        }),
-        signal: abortControllerRef.current.signal,
+      await createMessage({
+        session_id: sessionId,
+        role: "user",
+        content: userMessage,
       });
 
+      const response = await fetch(`/api/stream/chat?session_id=${sessionId}&message=${encodeURIComponent(userMessage)}`);
+      
       if (!response.ok) {
-        throw new Error("Stream request failed");
+        throw new Error("Failed to get AI response");
       }
 
       const reader = response.body?.getReader();
       const decoder = new TextDecoder();
+      let assistantContent = "";
 
-      if (!reader) {
-        throw new Error("No reader available");
-      }
+      const assistantMsg: Message = {
+        id: `temp-ai-${Date.now()}`,
+        role: "assistant",
+        content: "",
+      };
+      setMessages(prev => [...prev, assistantMsg]);
 
-      let buffer = "";
+      if (reader) {
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
 
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
+          const chunk = decoder.decode(value);
+          const lines = chunk.split("\n");
 
-        buffer += decoder.decode(value, { stream: true });
-        const lines = buffer.split("\n");
-        buffer = lines.pop() || "";
-
-        for (const line of lines) {
-          if (line.startsWith("data: ")) {
-            const data = line.slice(6);
-            try {
-              const parsed = JSON.parse(data);
-
-              if (parsed.type === "content") {
-                setMessages(prev => {
-                  const newMessages = [...prev];
-                  const lastMessage = newMessages[newMessages.length - 1];
-                  if (lastMessage.role === "assistant") {
-                    lastMessage.content += parsed.data;
-                  }
-                  return newMessages;
-                });
-              } else if (parsed.type === "tool_call") {
-                console.log("Tool call:", parsed.data);
-                // You can display tool calls in the UI if needed
-              } else if (parsed.type === "status") {
-                console.log("Status:", parsed.message);
-              } else if (parsed.type === "error") {
-                toast.error(`Error: ${parsed.message}`);
-              } else if (parsed.type === "done") {
-                setIsStreaming(false);
+          for (const line of lines) {
+            if (line.startsWith("data: ")) {
+              try {
+                const data = JSON.parse(line.slice(6));
+                if (data.type === "chunk") {
+                  assistantContent += data.content;
+                  setMessages(prev => {
+                    const newMsgs = [...prev];
+                    const lastMsg = newMsgs[newMsgs.length - 1];
+                    if (lastMsg.role === "assistant") {
+                      lastMsg.content = assistantContent;
+                    }
+                    return newMsgs;
+                  });
+                }
+              } catch (e) {
+                // Skip invalid JSON
               }
-            } catch (e) {
-              console.error("Failed to parse SSE data:", e);
             }
           }
         }
       }
+
+      await createMessage({
+        session_id: sessionId,
+        role: "assistant",
+        content: assistantContent,
+      });
+
     } catch (error: any) {
-      if (error.name === "AbortError") {
-        console.log("Stream aborted");
-      } else {
-        console.error("Stream error:", error);
-        toast.error("Failed to get response from AI");
-      }
-      // Remove the empty assistant message on error
+      toast.error(error.message || "Failed to send message");
       setMessages(prev => prev.slice(0, -1));
     } finally {
-      setIsStreaming(false);
-      abortControllerRef.current = null;
+      setLoading(false);
     }
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-
-    if (!input.trim() || isStreaming) return;
-
-    const message = input.trim();
-    setInput("");
-
-    // Save message to database
-    await sendMessageMutation.mutateAsync({
-      sessionId,
-      message,
-    });
-
-    // Start streaming response
-    await handleStreamResponse(message);
-  };
-
-  if (sessionLoading || messagesLoading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <Loader2 className="w-8 h-8 animate-spin text-blue-500" />
-      </div>
-    );
-  }
-
-  if (!session) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <Card className="p-6">
-          <h2 className="text-xl font-bold mb-2">Session Not Found</h2>
-          <p className="text-gray-600 mb-4">The requested chat session could not be found.</p>
-          <Button onClick={() => setLocation("/")}>Back to Home</Button>
-        </Card>
-      </div>
-    );
-  }
-
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex flex-col">
-      {/* Header */}
-      <div className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-6 py-4">
-        <div className="max-w-5xl mx-auto flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => setLocation("/")}
-            >
-              <ArrowLeft className="w-4 h-4 mr-2" />
-              Back
-            </Button>
-            <div>
-              <h1 className="text-xl font-bold text-gray-900 dark:text-white">
-                {session.title}
-              </h1>
-              <p className="text-sm text-gray-500 dark:text-gray-400">
-                AI-powered data analysis
-              </p>
-            </div>
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 flex flex-col">
+      <div className="bg-white border-b shadow-sm p-4">
+        <div className="max-w-4xl mx-auto flex items-center justify-between">
+          <div>
+            <h1 className="text-2xl font-bold text-gray-900">AI Analysis Chat</h1>
+            {sessionInfo && (
+              <p className="text-sm text-gray-500">Model: {sessionInfo.model_name}</p>
+            )}
           </div>
+          <Button onClick={() => setLocation("/upload")} variant="outline">
+            New Analysis
+          </Button>
         </div>
       </div>
 
-      {/* Messages */}
-      <div className="flex-1 overflow-y-auto px-6 py-8">
-        <div className="max-w-5xl mx-auto space-y-6">
+      <div className="flex-1 overflow-y-auto p-4">
+        <div className="max-w-4xl mx-auto space-y-4">
           {messages.length === 0 && (
-            <div className="text-center py-12">
-              <Bot className="w-16 h-16 mx-auto mb-4 text-gray-400" />
-              <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
-                Start Your Analysis
-              </h2>
-              <p className="text-gray-600 dark:text-gray-400 mb-6">
-                Ask me to analyze your data. Try commands like:
+            <Card className="p-8 text-center">
+              <Bot className="w-16 h-16 mx-auto text-purple-600 mb-4" />
+              <h2 className="text-xl font-semibold mb-2">Start Your Analysis</h2>
+              <p className="text-gray-600 mb-4">
+                Ask me to perform EDA, forecasting, or any analysis on your dataset
               </p>
-              <div className="max-w-md mx-auto space-y-2 text-left">
-                <div className="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-3">
-                  <code className="text-sm text-blue-700 dark:text-blue-300">
-                    "Please perform EDA on my data"
-                  </code>
-                </div>
-                <div className="bg-green-50 dark:bg-green-900/20 rounded-lg p-3">
-                  <code className="text-sm text-green-700 dark:text-green-300">
-                    "Forecast the sales column for the next 30 days"
-                  </code>
-                </div>
-                <div className="bg-purple-50 dark:bg-purple-900/20 rounded-lg p-3">
-                  <code className="text-sm text-purple-700 dark:text-purple-300">
-                    "Show me the correlation between variables"
-                  </code>
-                </div>
+              <div className="text-left max-w-md mx-auto bg-gray-50 rounded-lg p-4">
+                <p className="text-sm font-medium text-gray-700 mb-2">Try asking:</p>
+                <ul className="text-sm text-gray-600 space-y-1">
+                  <li>• "Please perform comprehensive EDA on my data"</li>
+                  <li>• "Show me the correlation between variables"</li>
+                  <li>• "Forecast the next 30 days"</li>
+                </ul>
               </div>
-            </div>
+            </Card>
           )}
 
-          {messages.map((message, index) => (
+          {messages.map((msg) => (
             <div
-              key={index}
-              className={`flex gap-4 ${
-                message.role === "user" ? "justify-end" : "justify-start"
-              }`}
+              key={msg.id}
+              className={`flex gap-3 ${msg.role === "user" ? "justify-end" : "justify-start"}`}
             >
-              {message.role === "assistant" && (
-                <div className="flex-shrink-0">
-                  <div className="w-8 h-8 rounded-full bg-blue-500 flex items-center justify-center">
-                    <Bot className="w-5 h-5 text-white" />
-                  </div>
+              {msg.role === "assistant" && (
+                <div className="w-8 h-8 rounded-full bg-purple-100 flex items-center justify-center flex-shrink-0">
+                  <Bot className="w-5 h-5 text-purple-600" />
                 </div>
               )}
-
-              <div
-                className={`max-w-3xl rounded-lg px-4 py-3 ${
-                  message.role === "user"
-                    ? "bg-blue-500 text-white"
-                    : "bg-white dark:bg-gray-800 text-gray-900 dark:text-white border border-gray-200 dark:border-gray-700"
-                }`}
-              >
-                {message.role === "user" ? (
-                  <p className="whitespace-pre-wrap">{message.content}</p>
+              <Card className={`p-4 max-w-3xl ${msg.role === "user" ? "bg-purple-600 text-white" : ""}`}>
+                {msg.role === "assistant" ? (
+                  <Streamdown>{msg.content}</Streamdown>
                 ) : (
-                  <div className="prose dark:prose-invert max-w-none">
-                    <Streamdown>{message.content}</Streamdown>
-                    {message.metadata?.toolCalls && (
-                      <div className="mt-4 space-y-2">
-                        {message.metadata.toolCalls.map((call: any, idx: number) => (
-                          <div key={idx} className="text-xs bg-gray-100 dark:bg-gray-700 rounded p-2">
-                            <strong>Tool:</strong> {call.tool}
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  </div>
+                  <p>{msg.content}</p>
                 )}
-              </div>
-
-              {message.role === "user" && (
-                <div className="flex-shrink-0">
-                  <div className="w-8 h-8 rounded-full bg-gray-700 flex items-center justify-center">
-                    <User className="w-5 h-5 text-white" />
-                  </div>
+              </Card>
+              {msg.role === "user" && (
+                <div className="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center flex-shrink-0">
+                  <User className="w-5 h-5 text-gray-600" />
                 </div>
               )}
             </div>
           ))}
-
-          {isStreaming && (
-            <div className="flex gap-4">
-              <div className="flex-shrink-0">
-                <div className="w-8 h-8 rounded-full bg-blue-500 flex items-center justify-center">
-                  <Loader2 className="w-5 h-5 text-white animate-spin" />
-                </div>
-              </div>
-              <div className="bg-white dark:bg-gray-800 rounded-lg px-4 py-3 border border-gray-200 dark:border-gray-700">
-                <p className="text-gray-500 dark:text-gray-400">Analyzing...</p>
-              </div>
-            </div>
-          )}
-
           <div ref={messagesEndRef} />
         </div>
       </div>
 
-      {/* Input */}
-      <div className="bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 px-6 py-4">
-        <form onSubmit={handleSubmit} className="max-w-5xl mx-auto">
-          <div className="flex gap-2">
-            <Input
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
-              placeholder="Ask me to analyze your data..."
-              disabled={isStreaming}
-              className="flex-1"
-            />
-            <Button type="submit" disabled={isStreaming || !input.trim()}>
-              {isStreaming ? (
-                <Loader2 className="w-4 h-4 animate-spin" />
-              ) : (
-                <Send className="w-4 h-4" />
-              )}
-            </Button>
-          </div>
-        </form>
+      <div className="bg-white border-t p-4">
+        <div className="max-w-4xl mx-auto flex gap-2">
+          <Input
+            value={input}
+            onChange={(e) => setInput(e.target.value)}
+            onKeyPress={(e) => e.key === "Enter" && !e.shiftKey && handleSend()}
+            placeholder="Ask about your data..."
+            disabled={loading}
+            className="flex-1"
+          />
+          <Button onClick={handleSend} disabled={loading || !input.trim()}>
+            {loading ? (
+              <Loader2 className="w-4 h-4 animate-spin" />
+            ) : (
+              <Send className="w-4 h-4" />
+            )}
+          </Button>
+        </div>
       </div>
     </div>
   );

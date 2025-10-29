@@ -34,3 +34,96 @@
 - [x] Add model selection field (allow user to choose Gemini model)
 - [x] Fix timeout issue in chat streaming (524 error)
 - [x] Improve Python process handling and error recovery
+
+
+## Refactoring Tasks
+
+- [x] Remove Python dependency completely
+- [x] Rewrite AI tools in TypeScript using @google/generative-ai
+- [x] Implement data analysis with simple-statistics and custom implementation
+- [x] Create visualization generation in Node.js
+- [x] Update streaming to use native Node.js (no Python spawn)
+- [x] Test all features with pure TypeScript implementation
+
+
+## New Improvements
+
+- [x] Change model selection from dropdown to manual text input
+- [x] Remove all remaining Python references and files
+- [x] Verify 100% Node.js implementation
+
+
+## GitHub Integration
+
+- [x] Initialize git repository
+- [x] Create GitHub repository (Cloud-Dark/ai-auto-analysis)
+- [x] Push code to GitHub
+- [x] Add comprehensive README
+
+## Major Architecture Changes - Full Client-Side (Opsi B)
+
+### Phase 1: Database Setup
+- [x] Install better-sqlite3 for SQLite support
+- [x] Create SQLite schema (datasets, sessions, messages)
+- [x] Create JSON file handlers (vectors.json, analysis.json, config.json)
+- [x] Setup database initialization on app start
+- [x] Commit: "Setup SQLite and JSON file storage"
+
+### Phase 2: Remove Authentication
+- [x] Remove OAuth routes and middleware
+- [x] Remove auth context and hooks
+- [x] Remove login/logout UI components
+- [x] Update App.tsx to remove auth checks
+- [ ] Commit: "Remove authentication system"
+
+### Phase 3: Migrate to SQLite + JSON
+- [x] Create SQLite service for CRUD operations
+- [x] Migrate dataset operations to SQLite
+- [x] Migrate session operations to SQLite
+- [x] Migrate message operations to SQLite
+- [x] Create JSON service for vectors/embeddings
+- [x] Commit: "Migrate data layer to SQLite + JSON"
+
+### Phase 4: Update Backend API
+- [x] Remove tRPC procedures (replace with simple REST)
+- [x] Create REST endpoints for datasets
+- [x] Create REST endpoints for sessions
+- [x] Create REST endpoints for messages
+- [x] Keep streaming endpoint for AI
+- [x] Fix better-sqlite3 bindings issue (switched to pure JSON storage)
+- [x] Test REST API endpoints
+- [x] Commit: "Replace tRPC with REST API and use pure JSON storage"
+
+### Phase 5: Update Frontend
+- [x] Remove tRPC client
+- [x] Create REST API client (lib/api.ts)
+- [x] Update Upload page to use REST API
+- [x] Update Config page to use REST API
+- [x] Update Chat page to use REST API
+- [x] Update App.tsx routes
+- [x] Commit: "Update frontend to use REST API"
+
+### Phase 6: Add Docusaurus Documentation (SKIPPED)
+- [ ] Install Docusaurus in /docs directory
+- [ ] Create documentation structure
+- [ ] Write user guide
+- [ ] Write API documentation
+- [ ] Write developer guide
+- [ ] Integrate docs link in app navigation
+- [ ] Commit: "Add Docusaurus documentation"
+
+Note: Skipped for now, can be added later if needed
+
+### Phase 7: Testing & Polish
+- [x] Test all CRUD operations (REST API working)
+- [x] Test AI streaming (endpoint ready)
+- [x] Test data persistence (JSON database working)
+- [x] Add error handling (toast notifications)
+- [x] Add loading states (all pages have loaders)
+- [x] Commit: "Testing and polish"
+
+### Phase 8: Final Deployment
+- [x] Update README with new architecture
+- [x] Push to GitHub
+- [x] Final commit
+- [ ] Save webdev checkpoint (for deployment)

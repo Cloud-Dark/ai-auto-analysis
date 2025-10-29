@@ -1,245 +1,95 @@
 # AI Auto Analysis
 
-Automated AI-powered data analysis application with exploratory data analysis (EDA) and forecasting capabilities using Google Gemini.
+Automated AI-powered data analysis application with natural language interface. Upload your dataset, configure Gemini AI, and chat with your data to perform EDA, forecasting, and comprehensive analysis.
 
-## Features
+## ✨ Features
 
-- **Dataset Upload**: Drag-and-drop interface for CSV and Excel files (up to 50MB)
-- **AI Configuration**: Secure Gemini API key configuration per session
-- **Streaming Chat Interface**: Real-time AI responses with Server-Sent Events (SSE)
-- **Exploratory Data Analysis**: 
-  - Statistical summaries
-  - Correlation matrices and heatmaps
-  - Distribution plots and box plots
-  - Missing value analysis
-- **Time Series Forecasting**:
-  - Prophet model for seasonal forecasting
-  - ARIMA model for time series prediction
-  - Automatic model selection
-- **Natural Language Interface**: Ask questions in plain English
+- **📊 Dataset Upload** - Drag-and-drop CSV/Excel files (up to 50MB)
+- **🤖 AI-Powered Analysis** - Natural language interface using Google Gemini
+- **📈 Exploratory Data Analysis (EDA)** - Automated statistical analysis and visualizations
+- **🔮 Forecasting** - Time-series prediction and trend analysis
+- **💬 Streaming Chat** - Real-time AI responses with markdown rendering
+- **🔒 Privacy-First** - All data stored locally in JSON files
+- **🚀 No Authentication** - Public access, perfect for internal tools
 
-## Tech Stack
+## 🏗️ Architecture
 
-### Frontend
-- React 19
-- Tailwind CSS 4
-- tRPC 11
-- Wouter (routing)
-- Streamdown (markdown rendering)
+**100% TypeScript/Node.js** - No Python dependencies!
 
-### Backend
-- Express 4
-- tRPC 11
-- MySQL/TiDB (database)
-- S3 (file storage)
+### Tech Stack
 
-### AI & Analysis
-- LangChain + LangGraph
-- Google Gemini (gemini-2.0-flash-exp)
-- Python 3.11
-- pandas, matplotlib, seaborn
-- Prophet, statsmodels (forecasting)
+- **Frontend**: React 19 + Tailwind CSS 4 + Wouter (routing)
+- **Backend**: Express 4 + REST API
+- **AI**: Google Gemini API with function calling
+- **Data Storage**: Pure JSON files (no database required)
+- **Analysis**: Custom TypeScript implementation with simple-statistics
+- **File Processing**: papaparse (CSV) + xlsx (Excel)
 
-## Setup
+## 🚀 Quick Start
 
 ### Prerequisites
-- Node.js 22+
-- Python 3.11
-- pnpm
-- MySQL/TiDB database
+
+- Node.js 22+ 
+- pnpm (or npm/yarn)
+- Google Gemini API key ([Get one here](https://aistudio.google.com/app/apikey))
 
 ### Installation
 
-1. Install Node.js dependencies:
 ```bash
+# Clone repository
+git clone https://github.com/Cloud-Dark/ai-auto-analysis.git
+cd ai-auto-analysis
+
+# Install dependencies
 pnpm install
-```
 
-2. Install Python dependencies:
-```bash
-pip3 install langchain langchain-google-genai prophet scikit-learn statsmodels pandas matplotlib seaborn
-```
-
-3. Setup database:
-```bash
-pnpm db:push
-```
-
-4. Start development server:
-```bash
+# Start development server
 pnpm dev
 ```
 
-## Usage
+The application will be available at `http://localhost:3000`
+
+## 📖 Usage
 
 ### 1. Upload Dataset
-- Navigate to the upload page
-- Drag and drop a CSV or Excel file, or click "Browse Files"
-- Supported formats: CSV, XLSX, XLS
-- Maximum file size: 50MB
+- Navigate to `/upload`
+- Drag and drop your CSV or Excel file
 
-### 2. Configure Gemini API
-- Enter your Gemini API key (get one from [Google AI Studio](https://aistudio.google.com/app/apikey))
-- The API key is stored securely and only used for this session
-- Click "Start Analysis" to create a chat session
+### 2. Configure AI
+- Enter your Gemini API key
+- Choose a model (gemini-2.0-flash-exp recommended)
 
-### 3. Chat with AI
-Try these example commands:
-- `"Please perform EDA on my data"` - Comprehensive exploratory data analysis
-- `"Show me the correlation between variables"` - Correlation matrix and heatmap
-- `"Forecast the sales column for the next 30 days"` - Time series forecasting
-- `"What are the main insights from this dataset?"` - AI-powered insights
-- `"Analyze the distribution of temperature"` - Distribution plots
+### 3. Chat with Your Data
+Ask questions like:
+- "Please perform comprehensive EDA on my data"
+- "Forecast sales for the next 30 days"
 
-### Example Workflow
+## 🔧 API Endpoints
 
-1. Upload `test_data.csv` (included in project)
-2. Configure your Gemini API key
-3. Ask: `"Please perform comprehensive EDA on my data"`
-4. AI will analyze:
-   - Dataset structure (4 columns, 30 rows)
-   - Statistical summaries
-   - Correlation matrix with heatmap
-   - Distribution plots for numeric columns
-5. Ask: `"Forecast sales for the next 7 days"`
-6. AI will generate forecast with visualization
+### Datasets
+- `GET /api/datasets` - List all datasets
+- `POST /api/datasets` - Upload dataset
+- `DELETE /api/datasets/:id` - Delete dataset
 
-## Architecture
+### Sessions
+- `GET /api/sessions` - List sessions
+- `POST /api/sessions` - Create session
 
-### Data Flow
-1. User uploads dataset → Stored in S3
-2. User configures Gemini API → Stored in database (encrypted)
-3. User sends message → Saved to database
-4. Backend downloads dataset from S3 to temp file
-5. Python script loads dataset and creates LangChain agent
-6. Agent uses tools (EDA, forecasting) to analyze data
-7. Results streamed back to frontend via SSE
-8. Visualizations displayed as base64 images
+### Streaming
+- `GET /api/stream/chat` - Streaming chat (SSE)
 
-### AI Tools
-The application uses LangChain tools for data analysis:
+## 🗄️ Data Storage
 
-- **perform_eda**: Exploratory data analysis with visualizations
-- **forecast_data**: Time series forecasting with Prophet/ARIMA
-- **get_column_info**: Dataset structure and column information
+All data stored locally in JSON files:
+- `data/database.json` - Main database
+- `data/uploads/` - Uploaded files
 
-### Streaming Architecture
-- Backend: Express + SSE (Server-Sent Events)
-- Python: Spawned process with stdout streaming
-- Frontend: EventSource-like fetch with ReadableStream
+No external database required!
 
-## API Endpoints
+## 📄 License
 
-### tRPC Procedures
-- `dataset.upload` - Upload dataset file
-- `dataset.list` - List user's datasets
-- `dataset.get` - Get dataset by ID
-- `chat.createSession` - Create new chat session
-- `chat.listSessions` - List user's chat sessions
-- `chat.getSession` - Get session by ID
-- `chat.getMessages` - Get session messages
-- `chat.sendMessage` - Send message to session
+MIT License
 
-### REST Endpoints
-- `POST /api/chat/stream` - Streaming chat endpoint (SSE)
+---
 
-## Database Schema
-
-### Tables
-- `users` - User authentication
-- `datasets` - Uploaded datasets metadata
-- `chatSessions` - Chat sessions with API keys
-- `chatMessages` - Chat message history
-
-## Security
-
-- API keys stored encrypted in database
-- Session-based authentication with JWT
-- File uploads validated (type, size)
-- S3 storage with non-enumerable paths
-- CORS and rate limiting enabled
-
-## Development
-
-### Project Structure
-```
-client/
-  src/
-    pages/
-      Home.tsx        - Landing page
-      Upload.tsx      - Dataset upload
-      Config.tsx      - Gemini API configuration
-      Chat.tsx        - Streaming chat interface
-server/
-  routers.ts          - tRPC procedures
-  chat-stream.ts      - SSE streaming endpoint
-  ai_tools.py         - Python AI analysis tools
-  db.ts               - Database queries
-drizzle/
-  schema.ts           - Database schema
-```
-
-### Adding New Analysis Tools
-
-1. Add tool function in `server/ai_tools.py`:
-```python
-@tool
-def my_analysis(param: str) -> str:
-    """Tool description"""
-    # Your analysis logic
-    return json.dumps(results)
-```
-
-2. Register tool in `create_agent()`:
-```python
-tools = [perform_eda, forecast_data, get_column_info, my_analysis]
-```
-
-3. Tool will be automatically available to the AI agent
-
-## Testing
-
-Test file included: `test_data.csv`
-- 30 rows of sales data
-- 4 columns: date, sales, temperature, customers
-- Good for testing EDA and forecasting
-
-## Deployment
-
-1. Save checkpoint:
-```bash
-# Changes are automatically tracked
-```
-
-2. Click "Publish" button in Management UI
-
-3. Configure environment variables in Settings → Secrets
-
-## Troubleshooting
-
-### Python dependencies not found
-```bash
-pip3 install --upgrade langchain langchain-google-genai prophet
-```
-
-### Database connection error
-```bash
-pnpm db:push
-```
-
-### Streaming not working
-- Check Python script is executable: `chmod +x server/ai_tools.py`
-- Verify Python 3.11 is available: `python3.11 --version`
-- Check server logs for Python errors
-
-## License
-
-MIT
-
-## Credits
-
-Built with Manus platform
-- LangChain for AI orchestration
-- Google Gemini for language model
-- Prophet for forecasting
-- React + Tailwind for UI
+**Made with ❤️ for data analysts**

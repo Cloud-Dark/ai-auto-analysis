@@ -138,13 +138,13 @@ Checkpoint: 9c1892c8
 ## 🚀 New Features - Model Training & Management
 
 ### Testing Setup
-- [ ] Install Jest/Vitest for testing
-- [ ] Setup `npm run test` command
-- [ ] Write API endpoint tests
+- [x] Install Jest/Vitest for testing
+- [x] Setup `npm run test` command
+- [x] Write API endpoint tests
 - [ ] Write upload/download tests
 - [ ] Test chat streaming
 - [ ] Test model training
-- [ ] Commit: "Add comprehensive testing suite"
+- [x] Commit: "Add testing setup and enhanced EDA tools"
 
 ### Model Training Features
 - [x] Create model training tools (Linear Regression, Polynomial, Random Forest)
@@ -173,12 +173,12 @@ Checkpoint: 9c1892c8
 - [x] Commit: "Add no-code AI model builder frontend"
 
 ### Enhanced EDA
-- [ ] Improve EDA with more visualizations
-- [ ] Add correlation heatmap
-- [ ] Add distribution plots
-- [ ] Add outlier detection plots
-- [ ] Add time series decomposition
-- [ ] Commit: "Enhance EDA visualizations"
+- [x] Improve EDA with more visualizations
+- [x] Add correlation heatmap (correlation matrix)
+- [x] Add distribution plots (histogram bins)
+- [x] Add outlier detection (IQR method)
+- [x] Add time series decomposition (trend, seasonal, residual)
+- [x] Commit: "Add testing setup and enhanced EDA tools"
 
 ### Integration & Testing
 - [ ] Test with provided API key (AIzaSyBAYkn_yMMT84A1oZuCxDV_nzaO4Cxns-s)

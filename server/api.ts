@@ -59,8 +59,8 @@ router.get("/datasets/:id", (req, res) => {
   }
 });
 
-// POST /api/datasets - Upload new dataset
-router.post("/datasets", upload.single("file"), async (req, res) => {
+// POST /api/datasets/upload - Upload new dataset
+router.post("/datasets/upload", upload.single("file"), async (req, res) => {
   try {
     if (!req.file) {
       return res.status(400).json({ success: false, error: "No file uploaded" });

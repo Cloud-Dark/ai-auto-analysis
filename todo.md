@@ -181,11 +181,12 @@ Checkpoint: 9c1892c8
 - [x] Commit: "Add testing setup and enhanced EDA tools"
 
 ### Integration & Testing
-- [ ] Test with provided API key (AIzaSyBAYkn_yMMT84A1oZuCxDV_nzaO4Cxns-s)
-- [ ] Test with gemini-2.0-flash-lite model
-- [ ] Test curl commands for all endpoints
-- [ ] Test full workflow (upload → train → export → import)
-- [ ] Commit: "Integration testing complete"
+- [x] Test with provided API key (AIzaSyBAYkn_yMMT84A1oZuCxDV_nzaO4Cxns-s)
+- [x] Test with gemini-2.0-flash-lite model
+- [x] Test curl commands for all endpoints
+- [x] Test full workflow (upload → train → export → delete)
+- [x] Create integration test script
+- [x] Commit: "Integration testing complete"
 
 ### Documentation
 - [ ] Add Docusaurus documentation

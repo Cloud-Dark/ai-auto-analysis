@@ -251,13 +251,28 @@ Checkpoint: 9c1892c8
 
 ## Classification & UI Improvements
 
-- [ ] Implement classification models (Logistic Regression, Random Forest Classifier)
-- [ ] Add confusion matrix calculation
-- [ ] Add confusion matrix visualization
-- [ ] Add classification metrics (Accuracy, Precision, Recall, F1-Score)
+- [x] Implement classification models (Logistic Regression, Random Forest Classifier)
+- [x] Add confusion matrix calculation
+- [ ] Add confusion matrix visualization (UI)
+- [x] Add classification metrics (Accuracy, Precision, Recall, F1-Score)
 - [ ] Update BuildModel page to support classification
+- [ ] Add classification API endpoints
 - [ ] Add model versioning UI in Models page
 - [ ] Show version history in Models page
 - [ ] Add "Create New Version" button
 - [ ] Improve model comparison UI
-- [ ] Commit: "Add classification models with confusion matrix"
+- [x] Commit: "Add classification models with confusion matrix"
+
+**Progress: Backend classification complete, UI pending**
+
+## Auto-Detection & Unified UI
+
+- [ ] Implement auto-detection (classification vs regression)
+- [ ] Detect based on target column type (categorical vs numeric)
+- [ ] Unified BuildModel UI for both types
+- [ ] Dynamic model selection based on problem type
+- [ ] Show appropriate metrics based on type
+- [ ] Confusion matrix for classification
+- [ ] Prediction plots for regression
+- [ ] Update API to support both types
+- [ ] Commit: "Add auto-detection and unified UI"

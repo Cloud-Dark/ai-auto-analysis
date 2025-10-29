@@ -23,6 +23,48 @@ const MODELS_DIR = path.join(process.cwd(), "data", "models");
 // Ensure models directory exists
 fs.mkdir(MODELS_DIR, { recursive: true }).catch(console.error);
 
+// Auto-detect problem type
+router.post("/detect", async (req, res) => {
+  try {
+    const { dataset_id, target_column } = req.body;
+
+    if (!dataset_id || !target_column) {
+      return res.status(400).json({
+        success: false,
+        error: "dataset_id and target_column are required",
+      });
+    }
+
+    const dataset = getDataset(dataset_id);
+    if (!dataset) {
+      return res.status(404).json({
+        success: false,
+        error: "Dataset not found",
+      });
+    }
+
+    const { detectProblemType, getRecommendedModels, getMetricNames } = await import("./auto-detect");
+    const detection = await detectProblemType(dataset.file_path, target_column);
+    const recommendedModels = getRecommendedModels(detection.problemType);
+    const metricNames = getMetricNames(detection.problemType);
+
+    res.json({
+      success: true,
+      data: {
+        ...detection,
+        recommendedModels,
+        metricNames,
+      },
+    });
+  } catch (error: any) {
+    console.error("Error detecting problem type:", error);
+    res.status(500).json({
+      success: false,
+      error: error.message,
+    });
+  }
+});
+
 // Train model
 router.post("/train", async (req, res) => {
   try {

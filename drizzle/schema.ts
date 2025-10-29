@@ -46,6 +46,7 @@ export const chatSessions = mysqlTable("chatSessions", {
   userId: int("userId").notNull(),
   datasetId: int("datasetId").notNull(),
   geminiApiKey: text("geminiApiKey").notNull(),
+  modelName: varchar("modelName", { length: 100 }).default("gemini-2.0-flash-exp").notNull(),
   title: varchar("title", { length: 255 }),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),

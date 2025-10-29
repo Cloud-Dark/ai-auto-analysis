@@ -107,6 +107,8 @@ export default function Chat() {
               } else if (parsed.type === "tool_call") {
                 console.log("Tool call:", parsed.data);
                 // You can display tool calls in the UI if needed
+              } else if (parsed.type === "status") {
+                console.log("Status:", parsed.message);
               } else if (parsed.type === "error") {
                 toast.error(`Error: ${parsed.message}`);
               } else if (parsed.type === "done") {

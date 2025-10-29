@@ -277,10 +277,10 @@ def get_column_info() -> str:
     except Exception as e:
         return json.dumps({"error": str(e)})
 
-def create_agent(api_key: str):
+def create_agent(api_key: str, model_name: str = "gemini-2.0-flash-exp"):
     """Create LangChain agent with tools"""
     llm = ChatGoogleGenerativeAI(
-        model="gemini-2.0-flash-exp",
+        model=model_name,
         google_api_key=api_key,
         temperature=0.3
     )
@@ -310,7 +310,7 @@ Be proactive in suggesting relevant analyses based on the data characteristics."
     
     return agent_executor
 
-def stream_chat(api_key: str, message: str, dataset_file: str = None, chat_history: List[Dict[str, str]] = None):
+def stream_chat(api_key: str, message: str, model_name: str = "gemini-2.0-flash-exp", dataset_file: str = None, chat_history: List[Dict[str, str]] = None):
     """Stream chat responses"""
     if chat_history is None:
         chat_history = []
@@ -322,7 +322,7 @@ def stream_chat(api_key: str, message: str, dataset_file: str = None, chat_histo
             yield json.dumps({"type": "error", "message": load_result["error"]}) + "\n"
             return
     
-    agent = create_agent(api_key)
+    agent = create_agent(api_key, model_name)
     
     # Convert chat history to LangChain format
     formatted_history = []
@@ -333,6 +333,9 @@ def stream_chat(api_key: str, message: str, dataset_file: str = None, chat_histo
             formatted_history.append(("ai", msg["content"]))
     
     try:
+        # Send initial acknowledgment
+        yield json.dumps({"type": "status", "message": "Processing your request..."}) + "\n"
+        
         # Stream the response
         for chunk in agent.stream({
             "input": message,
@@ -353,8 +356,13 @@ def stream_chat(api_key: str, message: str, dataset_file: str = None, chat_histo
                         "input": tool_input,
                         "output": tool_output
                     }) + "\n"
+    except KeyboardInterrupt:
+        yield json.dumps({"type": "error", "message": "Request cancelled"}) + "\n"
     except Exception as e:
-        yield json.dumps({"type": "error", "message": str(e)}) + "\n"
+        import traceback
+        error_details = traceback.format_exc()
+        print(f"Error in stream_chat: {error_details}", file=sys.stderr)
+        yield json.dumps({"type": "error", "message": f"Analysis error: {str(e)}"}) + "\n"
 
 if __name__ == "__main__":
     # Command line interface for testing
@@ -373,13 +381,14 @@ if __name__ == "__main__":
     
     elif command == "chat":
         if len(sys.argv) < 4:
-            print("Usage: python ai_tools.py chat <api_key> <message> [dataset_path]")
+            print("Usage: python ai_tools.py chat <api_key> <message> [model_name] [dataset_path]")
             sys.exit(1)
         api_key = sys.argv[2]
         message = sys.argv[3]
-        dataset_file = sys.argv[4] if len(sys.argv) > 4 else None
+        model_name = sys.argv[4] if len(sys.argv) > 4 else "gemini-2.0-flash-exp"
+        dataset_file = sys.argv[5] if len(sys.argv) > 5 else None
         
-        for chunk in stream_chat(api_key, message, dataset_file):
+        for chunk in stream_chat(api_key, message, model_name, dataset_file):
             print(chunk, end='', flush=True)
     
     else:

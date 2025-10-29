@@ -1,0 +1,1 @@
+ALTER TABLE `chatSessions` ADD `modelName` varchar(100) DEFAULT 'gemini-2.0-flash-exp' NOT NULL;

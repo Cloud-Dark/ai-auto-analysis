@@ -100,6 +100,7 @@ export const appRouter = router({
       .input(z.object({
         datasetId: z.number(),
         geminiApiKey: z.string(),
+        modelName: z.string().default("gemini-2.0-flash-exp"),
         title: z.string().optional(),
       }))
       .mutation(async ({ ctx, input }) => {
@@ -116,6 +117,7 @@ export const appRouter = router({
           userId: ctx.user.id,
           datasetId: input.datasetId,
           geminiApiKey: input.geminiApiKey,
+          modelName: input.modelName,
           title: input.title || `Analysis of ${dataset.name}`,
         });
 

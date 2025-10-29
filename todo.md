@@ -27,4 +27,10 @@
 - [x] Test forecasting with time-series data
 - [x] Test streaming chat functionality
 - [x] Add error handling and loading states
-- [ ] Create checkpoint for deployment
+- [x] Create checkpoint for deployment
+
+## New Features & Bugs
+
+- [x] Add model selection field (allow user to choose Gemini model)
+- [x] Fix timeout issue in chat streaming (524 error)
+- [x] Improve Python process handling and error recovery

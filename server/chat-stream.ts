@@ -74,8 +74,12 @@ router.post("/stream", async (req, res) => {
       "chat",
       chatSession.geminiApiKey,
       message,
+      chatSession.modelName || "gemini-2.0-flash-exp",
       tempFilePath, // Pass dataset path as argument
-    ]);
+    ], {
+      stdio: ['pipe', 'pipe', 'pipe'],
+      detached: false,
+    });
 
     // Stream Python output
     pythonProcess.stdout.on("data", (data) => {
@@ -102,17 +106,32 @@ router.post("/stream", async (req, res) => {
     });
 
     pythonProcess.stderr.on("data", (data) => {
-      console.error("Python error:", data.toString());
+      const errorMsg = data.toString();
+      console.error("Python error:", errorMsg);
+      // Send error to client if it's not just warnings
+      if (!errorMsg.includes("DeprecationWarning") && !errorMsg.includes("FutureWarning")) {
+        res.write(`data: ${JSON.stringify({ type: "error", message: errorMsg })}
+
+`);
+      }
     });
 
-    pythonProcess.on("close", async (code) => {
-      // Save assistant response
-      await createChatMessage({
-        sessionId,
-        role: "assistant",
-        content: fullResponse || "Analysis completed.",
-        metadata: toolCalls.length > 0 ? JSON.stringify({ toolCalls }) : null,
-      });
+      pythonProcess.on("close", async (code) => {
+      console.log(`Python process exited with code ${code}`);
+      
+      // Save assistant response only if we got content
+      if (fullResponse) {
+        try {
+          await createChatMessage({
+            sessionId,
+            role: "assistant",
+            content: fullResponse,
+            metadata: toolCalls.length > 0 ? JSON.stringify({ toolCalls }) : null,
+          });
+        } catch (e) {
+          console.error("Failed to save message:", e);
+        }
+      }
 
       // Clean up temp file
       try {
@@ -121,13 +140,33 @@ router.post("/stream", async (req, res) => {
         console.error("Failed to delete temp file:", e);
       }
 
-      res.write(`data: ${JSON.stringify({ type: "done" })}\n\n`);
+      res.write(`data: ${JSON.stringify({ type: "done" })}
+
+`);
+      res.end();
+    });
+
+    // Handle Python process errors
+    pythonProcess.on("error", (error) => {
+      console.error("Failed to start Python process:", error);
+      res.write(`data: ${JSON.stringify({ type: "error", message: "Failed to start analysis process" })}
+
+`);
       res.end();
     });
 
     // Handle client disconnect
     req.on("close", () => {
-      pythonProcess.kill();
+      console.log("Client disconnected, killing Python process");
+      if (!pythonProcess.killed) {
+        pythonProcess.kill("SIGTERM");
+        // Force kill after 2 seconds if still running
+        setTimeout(() => {
+          if (!pythonProcess.killed) {
+            pythonProcess.kill("SIGKILL");
+          }
+        }, 2000);
+      }
     });
 
   } catch (error) {

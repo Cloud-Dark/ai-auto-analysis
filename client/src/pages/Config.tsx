@@ -13,7 +13,15 @@ export default function Config() {
   const datasetId = parseInt(params.id as string);
   const [, setLocation] = useLocation();
   const [apiKey, setApiKey] = useState("");
+  const [modelName, setModelName] = useState("gemini-2.0-flash-exp");
   const [isCreating, setIsCreating] = useState(false);
+
+  const availableModels = [
+    { value: "gemini-2.0-flash-exp", label: "Gemini 2.0 Flash (Experimental) - Fast & Latest" },
+    { value: "gemini-1.5-flash", label: "Gemini 1.5 Flash - Fast & Efficient" },
+    { value: "gemini-1.5-pro", label: "Gemini 1.5 Pro - Most Capable" },
+    { value: "gemini-1.0-pro", label: "Gemini 1.0 Pro - Stable" },
+  ];
 
   const { data: dataset, isLoading } = trpc.dataset.get.useQuery({ id: datasetId });
 
@@ -40,6 +48,7 @@ export default function Config() {
     await createSessionMutation.mutateAsync({
       datasetId,
       geminiApiKey: apiKey,
+      modelName,
     });
   };
 
@@ -136,6 +145,26 @@ export default function Config() {
                   >
                     Get one from Google AI Studio
                   </a>
+                </p>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="model">AI Model</Label>
+                <select
+                  id="model"
+                  value={modelName}
+                  onChange={(e) => setModelName(e.target.value)}
+                  disabled={isCreating}
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  {availableModels.map((model) => (
+                    <option key={model.value} value={model.value}>
+                      {model.label}
+                    </option>
+                  ))}
+                </select>
+                <p className="text-xs text-gray-500 dark:text-gray-400">
+                  Choose the model based on your needs. Flash models are faster, Pro models are more capable.
                 </p>
               </div>
 

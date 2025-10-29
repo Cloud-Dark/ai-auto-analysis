@@ -11,8 +11,12 @@ import {
   exportModel,
   importModel,
   predict,
+  trainLogisticRegression,
+  trainRandomForestClassifier,
   type TrainedModel,
   type TrainingResult,
+  type ClassificationModel,
+  type ClassificationResult,
 } from "./ml-models";
 import { getDataset } from "./json-db";
 
@@ -144,6 +148,44 @@ router.post("/train", async (req, res) => {
           options.name
         );
         break;
+
+      case "logistic_regression":
+        const logisticResult = await trainLogisticRegression(
+          XTrain as any,
+          yTrain as any,
+          data.featureNames,
+          data.targetName,
+          dataset_id,
+          options.name
+        );
+        // Save classification model
+        const logisticPath = path.join(MODELS_DIR, `${logisticResult.model.id}.json`);
+        await fs.writeFile(logisticPath, JSON.stringify(logisticResult.model, null, 2));
+        return res.json({
+          success: true,
+          data: logisticResult,
+        });
+
+      case "random_forest_classifier":
+        const rfClassResult = await trainRandomForestClassifier(
+          XTrain,
+          yTrain as any,
+          data.featureNames,
+          data.targetName,
+          dataset_id,
+          options.name,
+          {
+            nEstimators: options.n_estimators || 100,
+            maxDepth: options.max_depth || 10,
+          }
+        );
+        // Save classification model
+        const rfClassPath = path.join(MODELS_DIR, `${rfClassResult.model.id}.json`);
+        await fs.writeFile(rfClassPath, JSON.stringify(rfClassResult.model, null, 2));
+        return res.json({
+          success: true,
+          data: rfClassResult,
+        });
 
       case "auto":
         const results = await autoTrain(dataset.file_path, target_column, dataset_id, test_size);

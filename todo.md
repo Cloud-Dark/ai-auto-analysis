@@ -267,12 +267,16 @@ Checkpoint: 9c1892c8
 
 ## Auto-Detection & Unified UI
 
-- [ ] Implement auto-detection (classification vs regression)
-- [ ] Detect based on target column type (categorical vs numeric)
+- [x] Implement auto-detection (classification vs regression)
+- [x] Detect based on target column type (categorical vs numeric)
+- [x] API endpoint for detection (POST /api/ml/detect)
+- [x] Smart detection rules with confidence scoring
+- [x] Recommended models based on problem type
+- [x] Commit: "Add auto-detection for classification vs regression"
 - [ ] Unified BuildModel UI for both types
 - [ ] Dynamic model selection based on problem type
 - [ ] Show appropriate metrics based on type
-- [ ] Confusion matrix for classification
+- [ ] Confusion matrix visualization for classification
 - [ ] Prediction plots for regression
-- [ ] Update API to support both types
-- [ ] Commit: "Add auto-detection and unified UI"
+- [x] Update train API to support classification (logistic_regression, random_forest_classifier)
+- [ ] Commit: "Update UI with auto-detection and unified interface"

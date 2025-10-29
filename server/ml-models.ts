@@ -378,3 +378,263 @@ export function predict(model: TrainedModel, X: number[][]): number[] {
       throw new Error(`Unknown model type: ${model.type}`);
   }
 }
+
+
+// Classification Types
+export interface ClassificationMetrics {
+  accuracy: number;
+  precision: number;
+  recall: number;
+  f1_score: number;
+  confusion_matrix: number[][];
+  class_labels: (string | number)[];
+}
+
+export interface ClassificationModel {
+  id: string;
+  name: string;
+  type: "logistic_regression" | "random_forest_classifier";
+  metrics: ClassificationMetrics;
+  model: any;
+  featureNames: string[];
+  targetName: string;
+  trainedAt: string;
+  datasetId: string;
+  version: number;
+  parent_id?: string;
+  description?: string;
+}
+
+export interface ClassificationResult {
+  model: ClassificationModel;
+  predictions: (string | number)[];
+  actual: (string | number)[];
+  confusion_matrix: number[][];
+  class_labels: (string | number)[];
+}
+
+/**
+ * Calculate confusion matrix
+ */
+export function calculateConfusionMatrix(
+  actual: (string | number)[],
+  predicted: (string | number)[]
+): { matrix: number[][], labels: (string | number)[] } {
+  // Get unique labels
+  const labels = Array.from(new Set([...actual, ...predicted])).sort();
+  const labelToIndex = new Map(labels.map((label, i) => [label, i]));
+  
+  // Initialize matrix
+  const matrix = Array(labels.length).fill(0).map(() => Array(labels.length).fill(0));
+  
+  // Fill matrix
+  for (let i = 0; i < actual.length; i++) {
+    const actualIdx = labelToIndex.get(actual[i])!;
+    const predIdx = labelToIndex.get(predicted[i])!;
+    matrix[actualIdx][predIdx]++;
+  }
+  
+  return { matrix, labels };
+}
+
+/**
+ * Calculate classification metrics
+ */
+export function calculateClassificationMetrics(
+  actual: (string | number)[],
+  predicted: (string | number)[]
+): ClassificationMetrics {
+  const { matrix, labels } = calculateConfusionMatrix(actual, predicted);
+  
+  // Calculate accuracy
+  const correct = matrix.reduce((sum, row, i) => sum + row[i], 0);
+  const total = actual.length;
+  const accuracy = correct / total;
+  
+  // Calculate per-class metrics
+  const numClasses = labels.length;
+  let totalPrecision = 0;
+  let totalRecall = 0;
+  let validClasses = 0;
+  
+  for (let i = 0; i < numClasses; i++) {
+    // True positives
+    const tp = matrix[i][i];
+    
+    // False positives (predicted as class i but actually other classes)
+    const fp = matrix.reduce((sum, row, j) => j !== i ? sum + row[i] : sum, 0);
+    
+    // False negatives (actually class i but predicted as other classes)
+    const fn = matrix[i].reduce((sum, val, j) => j !== i ? sum + val : sum, 0);
+    
+    // Precision = TP / (TP + FP)
+    const precision = (tp + fp) > 0 ? tp / (tp + fp) : 0;
+    
+    // Recall = TP / (TP + FN)
+    const recall = (tp + fn) > 0 ? tp / (tp + fn) : 0;
+    
+    if (!isNaN(precision) && !isNaN(recall)) {
+      totalPrecision += precision;
+      totalRecall += recall;
+      validClasses++;
+    }
+  }
+  
+  // Macro-averaged metrics
+  const precision = validClasses > 0 ? totalPrecision / validClasses : 0;
+  const recall = validClasses > 0 ? totalRecall / validClasses : 0;
+  
+  // F1 Score = 2 * (precision * recall) / (precision + recall)
+  const f1_score = (precision + recall) > 0 ? 2 * (precision * recall) / (precision + recall) : 0;
+  
+  return {
+    accuracy,
+    precision,
+    recall,
+    f1_score,
+    confusion_matrix: matrix,
+    class_labels: labels,
+  };
+}
+
+/**
+ * Train Logistic Regression (simple implementation)
+ */
+export async function trainLogisticRegression(
+  X: number[][],
+  y: (string | number)[],
+  featureNames: string[],
+  targetName: string,
+  datasetId: string,
+  name: string = "Logistic Regression Model"
+): Promise<ClassificationResult> {
+  // Convert labels to numeric
+  const uniqueLabels = Array.from(new Set(y)).sort();
+  const labelToNum = new Map(uniqueLabels.map((label, i) => [label, i]));
+  const numToLabel = new Map(uniqueLabels.map((label, i) => [i, label]));
+  
+  const yNumeric = y.map(label => labelToNum.get(label)!);
+  
+  // Simple logistic regression using gradient descent
+  const numFeatures = X[0].length;
+  let weights = Array(numFeatures).fill(0);
+  let bias = 0;
+  
+  const learningRate = 0.01;
+  const iterations = 1000;
+  
+  // Sigmoid function
+  const sigmoid = (z: number) => 1 / (1 + Math.exp(-z));
+  
+  // Training
+  for (let iter = 0; iter < iterations; iter++) {
+    const predictions = X.map(row => {
+      const z = row.reduce((sum, val, i) => sum + val * weights[i], bias);
+      return sigmoid(z);
+    });
+    
+    // Update weights
+    for (let i = 0; i < numFeatures; i++) {
+      const gradient = X.reduce((sum, row, j) => {
+        return sum + (predictions[j] - yNumeric[j]) * row[i];
+      }, 0) / X.length;
+      weights[i] -= learningRate * gradient;
+    }
+    
+    // Update bias
+    const biasGradient = predictions.reduce((sum, pred, i) => sum + (pred - yNumeric[i]), 0) / X.length;
+    bias -= learningRate * biasGradient;
+  }
+  
+  // Make predictions
+  const predictedNumeric = X.map(row => {
+    const z = row.reduce((sum, val, i) => sum + val * weights[i], bias);
+    const prob = sigmoid(z);
+    return prob >= 0.5 ? 1 : 0;
+  });
+  
+  const predicted = predictedNumeric.map(num => numToLabel.get(num)!);
+  
+  // Calculate metrics
+  const metrics = calculateClassificationMetrics(y, predicted);
+  
+  const model: ClassificationModel = {
+    id: `model_${Date.now()}`,
+    name,
+    type: "logistic_regression",
+    metrics,
+    model: { weights, bias, labelToNum: Array.from(labelToNum.entries()), numToLabel: Array.from(numToLabel.entries()) },
+    featureNames,
+    targetName,
+    trainedAt: new Date().toISOString(),
+    datasetId,
+    version: 1,
+  };
+  
+  return {
+    model,
+    predictions: predicted,
+    actual: y,
+    confusion_matrix: metrics.confusion_matrix,
+    class_labels: metrics.class_labels,
+  };
+}
+
+/**
+ * Train Random Forest Classifier
+ */
+export async function trainRandomForestClassifier(
+  X: number[][],
+  y: (string | number)[],
+  featureNames: string[],
+  targetName: string,
+  datasetId: string,
+  name: string = "Random Forest Classifier",
+  options: { nEstimators?: number; maxDepth?: number } = {}
+): Promise<ClassificationResult> {
+  const { nEstimators = 100, maxDepth = 10 } = options;
+  
+  // Convert labels to numeric
+  const uniqueLabels = Array.from(new Set(y)).sort();
+  const labelToNum = new Map(uniqueLabels.map((label, i) => [label, i]));
+  const numToLabel = new Map(uniqueLabels.map((label, i) => [i, label]));
+  
+  const yNumeric = y.map(label => labelToNum.get(label)!);
+  
+  // Train Random Forest
+  const rf = new RandomForestClassifier({
+    nEstimators,
+    maxDepth,
+    seed: 42,
+  });
+  
+  rf.train(X, yNumeric);
+  
+  // Make predictions
+  const predictedNumeric = rf.predict(X);
+  const predicted = predictedNumeric.map(num => numToLabel.get(num)!);
+  
+  // Calculate metrics
+  const metrics = calculateClassificationMetrics(y, predicted);
+  
+  const model: ClassificationModel = {
+    id: `model_${Date.now()}`,
+    name,
+    type: "random_forest_classifier",
+    metrics,
+    model: { rf: rf.toJSON(), labelToNum: Array.from(labelToNum.entries()), numToLabel: Array.from(numToLabel.entries()) },
+    featureNames,
+    targetName,
+    trainedAt: new Date().toISOString(),
+    datasetId,
+    version: 1,
+  };
+  
+  return {
+    model,
+    predictions: predicted,
+    actual: y,
+    confusion_matrix: metrics.confusion_matrix,
+    class_labels: metrics.class_labels,
+  };
+}
